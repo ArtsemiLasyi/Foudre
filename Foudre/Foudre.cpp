@@ -1,5 +1,5 @@
 ﻿// Foudre.cpp : Определяет точку входа для приложения.
-//
+// Это аудиоплеер
 
 #include "framework.h"
 #include "Foudre.h"
