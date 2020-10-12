@@ -2,10 +2,13 @@
 #include "Foudre.h"
 #include "ProgramInfo.h"
 #include "roundbutton.h"
+#include <shellapi.h>
+#include <strsafe.h>
 
 #pragma comment(linker, "\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
 #define MAX_LOADSTRING 100
+#define IDM_EXIT 10000
 
 // Глобальные переменные:
 HINSTANCE hInst;                                // текущий экземпляр
@@ -27,6 +30,10 @@ RoundButton bbNext(1005);
 RoundButton bbRewindBack(1006);
 RoundButton bbRewindForward(1007);
 
+// Структура для отображения уведомлений в области уведомлений
+NOTIFYICONDATA notifyIconData;
+UINT const WMAPP_NOTIFYCALLBACK = WM_APP + 1;
+
 // Объявление функций
 void ProcessWM_PAINT(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
@@ -34,8 +41,16 @@ void ProcessWM_CREATE(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 void ProcessWM_COMMAND(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
+void ProcessWM_SIZE(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+
+void ProcessWM_NOTIFYCALLBACK(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+
+void CreateNotifyIcon(HWND hWnd, NOTIFYICONDATA* nf);
+
+void CreateNotifyIconContextMenu(HWND hWnd);
+
 /// <summary>
-/// 
+/// Входная точка программы
 /// </summary>
 /// <param name="hInstance"></param>
 /// <param name="hPrevInstance"></param>
@@ -78,7 +93,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 }
 
 /// <summary>
-/// 
+/// Региструет главный оконный класс
 /// </summary>
 /// <param name="hInstance"></param>
 /// <returns></returns>
@@ -131,7 +146,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow, ProgramInfo* programinfo)
 }
 
 /// <summary>
-/// 
+/// Обрабатывает сообщения главного окна приложения
 /// </summary>
 /// <param name="hWnd"></param>
 /// <param name="message"></param>
@@ -181,11 +196,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
         break;
 
+        case WMAPP_NOTIFYCALLBACK:
+        {
+            ProcessWM_NOTIFYCALLBACK(hWnd, message, wParam, lParam);
+        }
+        break;
+
         case WM_DESTROY:
         {
             PostQuitMessage(0);
         }
         break;
+
+        case WM_SIZE:
+        {
+            ProcessWM_SIZE(hWnd, message, wParam, lParam);
+        }
 
         default:
             return DefWindowProc(hWnd, message, wParam, lParam);
@@ -194,7 +220,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 }
 
 /// <summary>
-/// 
+/// Обрабатывает сообщения диалогового окна "О программе"
 /// </summary>
 /// <param name="hDlg"></param>
 /// <param name="message"></param>
@@ -221,7 +247,7 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 }
 
 /// <summary>
-/// 
+/// Обрабатывает сообщение WM_PAINT
 /// </summary>
 /// <param name="hWnd"></param>
 /// <param name="message"></param>
@@ -240,17 +266,12 @@ void ProcessWM_PAINT(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     lb.lbHatch = HS_BDIAGONAL;
     HBRUSH brush = CreateBrushIndirect(&lb);
     FillRect(hdc, &rect, brush);
-    /*
-    HPEN hPen = CreatePen(PS_DOT, 5, RGB(0, 0, 0));
-    SelectObject(hdc, hPen);
-    SetBkColor(hdc, RGB(135, 115, 238));
-    Rectangle(hdc, rect.left, rect.top, rect.right, rect.bottom);
-    */
+    
     EndPaint(hWnd, &ps);
 }
 
 /// <summary>
-/// 
+/// Обрабатывает сообщение WM_CREATE
 /// </summary>
 /// <param name="hWnd"></param>
 /// <param name="message"></param>
@@ -280,7 +301,7 @@ void ProcessWM_CREATE(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 }
 
 /// <summary>
-/// 
+/// Обрабатывает сообщение WM_COMMAND
 /// </summary>
 /// <param name="hWnd"></param>
 /// <param name="message"></param>
@@ -316,4 +337,88 @@ void ProcessWM_COMMAND(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
         MessageBox(hWnd, L"RewindForward", L"RewindForward", MB_OK);
     }
+    else if (LOWORD(wParam) == IDM_EXIT)
+    {
+        DestroyWindow(hWnd);
+    }
+}
+
+/// <summary>
+/// Обрабатывает сообщение WM_SIZE
+/// </summary>
+/// <param name="hWnd"></param>
+/// <param name="message"></param>
+/// <param name="wParam"></param>
+/// <param name="lParam"></param>
+void ProcessWM_SIZE(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    if (wParam == SIZE_MINIMIZED)
+    {    
+        CreateNotifyIcon(hWnd, &notifyIconData);
+        Shell_NotifyIcon(NIM_ADD, &notifyIconData);
+        ShowWindow(hWnd, SW_HIDE);
+    }
+
+    if (wParam == SIZE_RESTORED)
+    {
+        Shell_NotifyIcon(NIM_DELETE, &notifyIconData);
+    }
+}
+
+/// <summary>
+/// Обработка сообщений из области уведомлений
+/// </summary>
+/// <param name="hWnd"></param>
+/// <param name="message"></param>
+/// <param name="wParam"></param>
+/// <param name="lParam"></param>
+void ProcessWM_NOTIFYCALLBACK(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    switch (LOWORD(lParam))
+    {
+        case WM_LBUTTONDOWN:
+        {
+            ShowWindow(hWnd, SW_SHOW);
+            ShowWindow(hWnd, SW_RESTORE);
+        }
+        break;
+
+        case WM_RBUTTONDOWN:
+        {
+            CreateNotifyIconContextMenu(hWnd);
+        }
+        break;
+    }
+}
+
+/// <summary>
+/// Создает иконку в панели уведомлений
+/// </summary>
+/// <param name="hWnd"></param>
+/// <param name="nf"></param>
+void CreateNotifyIcon(HWND hWnd, NOTIFYICONDATA* nf)
+{
+    nf->hWnd = hWnd;
+    nf->uID = NULL;
+    nf->uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+    StringCchCopy(nf->szTip, ARRAYSIZE(nf->szTip), L"Foudre");
+    nf->uCallbackMessage = WMAPP_NOTIFYCALLBACK;
+    nf->hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_APPICON));
+}
+
+/// <summary>
+/// Создает в панели уведомлений контекстное меню
+/// </summary>
+/// <param name="hWnd"></param>
+void CreateNotifyIconContextMenu(HWND hWnd)
+{
+    POINT point;
+    GetCursorPos(&point);
+    HMENU hPopupMenu = CreatePopupMenu();
+    InsertMenu(hPopupMenu, 0, MF_BYPOSITION | MF_STRING, IDM_EXIT, L"Exit");
+    InsertMenu(hPopupMenu, 0, MF_BYPOSITION | MF_SEPARATOR, 0, L"");
+    InsertMenu(hPopupMenu, 0, MF_BYPOSITION | MF_STRING, bbPause.GetMenuValue(), L"Pause");
+    InsertMenu(hPopupMenu, 0, MF_BYPOSITION | MF_STRING, bbPlay.GetMenuValue(), L"Play");
+    SetForegroundWindow(hWnd);
+    TrackPopupMenuEx(hPopupMenu, TPM_BOTTOMALIGN | TPM_LEFTALIGN, point.x, point.y, hWnd, NULL);
 }
