@@ -142,28 +142,31 @@
   <ItemGroup>
     <ClInclude Include="Foudre.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="MediaPlayer.h" />
     <ClInclude Include="ProgramInfo.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="roundbutton.h" />
+    <ClInclude Include="soundtrackprogressbar.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="textbox.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Foudre.cpp" />
+    <ClCompile Include="MediaPlayer.cpp" />
     <ClCompile Include="ProgramInfo.cpp" />
     <ClCompile Include="roundbutton.cpp" />
+    <ClCompile Include="soundtrackprogressbar.cpp" />
+    <ClCompile Include="textbox.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Foudre.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\..\..\Files\Buttons\bmp\nextsmall.bmp" />
-    <Image Include="..\..\..\Files\Buttons\bmp\pausesmall.bmp" />
-    <Image Include="..\..\..\Files\Buttons\bmp\play.bmp" />
-    <Image Include="..\..\..\Files\Buttons\bmp\playsmall.bmp" />
-    <Image Include="..\..\..\Files\Buttons\bmp\previoussmall.bmp" />
-    <Image Include="..\..\..\Files\Buttons\bmp\rewindbacksmall.bmp" />
-    <Image Include="..\..\..\Files\Buttons\bmp\rewindforwardsmall.bmp" />
-    <Image Include="..\..\..\Files\Buttons\bmp\stopsmall.bmp" />
+    <Image Include="..\..\..\Files\Buttons\new\bmp\nextsmall.bmp" />
+    <Image Include="..\..\..\Files\Buttons\new\bmp\pausesmall.bmp" />
+    <Image Include="..\..\..\Files\Buttons\new\bmp\playsmall.bmp" />
+    <Image Include="..\..\..\Files\Buttons\new\bmp\previoussmall.bmp" />
+    <Image Include="..\..\..\Files\Buttons\new\bmp\stopsmall.bmp" />
     <Image Include="..\..\..\Files\Icon\Icon.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -4,6 +4,7 @@
 #include "roundbutton.h"
 #include <shellapi.h>
 #include <strsafe.h>
+#include "soundtrackprogressbar.h"
 
 #pragma comment(linker, "\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
@@ -27,8 +28,9 @@ RoundButton bbStop(1002);
 RoundButton bbPause(1003);
 RoundButton bbPrevious(1004);
 RoundButton bbNext(1005);
-RoundButton bbRewindBack(1006);
-RoundButton bbRewindForward(1007);
+
+// Прогрессбар
+SoundtrackProgressbar progressbar;
 
 // Структура для отображения уведомлений в области уведомлений
 NOTIFYICONDATA notifyIconData;
@@ -43,7 +45,11 @@ void ProcessWM_COMMAND(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 void ProcessWM_SIZE(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
+void ProcessWM_LBUTTONDOWN(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+
 void ProcessWM_NOTIFYCALLBACK(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+
+void ProcessWM_TIMER(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 void CreateNotifyIcon(HWND hWnd, NOTIFYICONDATA* nf);
 
@@ -111,7 +117,6 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
     wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_APPICON));
     wcex.hCursor        = LoadCursor(nullptr, IDC_ARROW);
     wcex.hbrBackground  = (HBRUSH)(COLOR_WINDOW+1);
-    //wcex.lpszMenuName   = MAKEINTRESOURCEW(IDC_FOUDRE);
     wcex.lpszMenuName = 0;
     wcex.lpszClassName  = szWindowClass;
     wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_APPICON));
@@ -120,7 +125,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 }
 
 /// <summary>
-/// 
+/// Создает главное окно приложения
 /// </summary>
 /// <param name="hInstance"></param>
 /// <param name="nCmdShow"></param>
@@ -163,30 +168,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
         break;
 
+        case WM_TIMER:
+        {
+            ProcessWM_TIMER(hWnd, message, wParam, lParam);
+        }
+        break;
+
         case WM_COMMAND:
         {
             ProcessWM_COMMAND(hWnd, message, wParam, lParam);
-
-
-            int wmId = LOWORD(wParam);
-
-            switch (wmId)
-            {
-                case IDM_ABOUT:
-                {
-                    DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
-                }
-                break;
-
-                case IDM_EXIT:
-                {
-                    DestroyWindow(hWnd);
-                }
-                break;
-
-                default:
-                    return DefWindowProc(hWnd, message, wParam, lParam);
-            }
         }
         break;
 
@@ -199,6 +189,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         case WMAPP_NOTIFYCALLBACK:
         {
             ProcessWM_NOTIFYCALLBACK(hWnd, message, wParam, lParam);
+        }
+        break;
+
+        case WM_LBUTTONDOWN:
+        {
+            ProcessWM_LBUTTONDOWN(hWnd, message, wParam, lParam);
         }
         break;
 
@@ -220,33 +216,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 }
 
 /// <summary>
-/// Обрабатывает сообщения диалогового окна "О программе"
-/// </summary>
-/// <param name="hDlg"></param>
-/// <param name="message"></param>
-/// <param name="wParam"></param>
-/// <param name="lParam"></param>
-/// <returns></returns>
-INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
-{
-    UNREFERENCED_PARAMETER(lParam);
-    switch (message)
-    {
-    case WM_INITDIALOG:
-        return (INT_PTR)TRUE;
-
-    case WM_COMMAND:
-        if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
-        {
-            EndDialog(hDlg, LOWORD(wParam));
-            return (INT_PTR)TRUE;
-        }
-        break;
-    }
-    return (INT_PTR)FALSE;
-}
-
-/// <summary>
 /// Обрабатывает сообщение WM_PAINT
 /// </summary>
 /// <param name="hWnd"></param>
@@ -259,14 +228,50 @@ void ProcessWM_PAINT(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     RECT rect;
     HDC hdc = BeginPaint(hWnd, &ps);
     GetClientRect(hWnd, &rect);
-    
-    LOGBRUSH lb;
-    lb.lbStyle = BS_SOLID;
-    lb.lbColor = RGB(135, 115, 238);
-    lb.lbHatch = HS_BDIAGONAL;
-    HBRUSH brush = CreateBrushIndirect(&lb);
-    FillRect(hdc, &rect, brush);
-    
+
+    progressbar.Paint(hdc);
+
+    SetBkMode(hdc, TRANSPARENT);
+
+    static LOGFONT logFontSong;
+    logFontSong.lfCharSet = DEFAULT_CHARSET;
+    logFontSong.lfPitchAndFamily = DEFAULT_PITCH;
+    strcpy_s((char*)logFontSong.lfFaceName, _countof(logFontSong.lfFaceName), "Arial");
+    logFontSong.lfHeight = 30;
+    logFontSong.lfWidth = 15;
+    logFontSong.lfWeight = 20;
+    logFontSong.lfEscapement = 0;
+    HFONT hSongFont = CreateFontIndirect(&logFontSong);
+    RECT textSongRect;
+    textSongRect.left = rect.right / 2 - 150;
+    textSongRect.top = rect.bottom / 2 - 50;
+    textSongRect.right = rect.right / 2 + 150;
+    textSongRect.bottom = rect.bottom / 2 + 50;
+
+    SelectObject(hdc, hSongFont);
+    DrawText(hdc, L"Крутая песня", -1, &textSongRect, DT_CENTER);
+    DeleteObject(hSongFont);
+
+
+    static LOGFONT logFontSongTime;
+    logFontSongTime.lfCharSet = DEFAULT_CHARSET;
+    logFontSongTime.lfPitchAndFamily = DEFAULT_PITCH;
+    strcpy_s((char*)logFontSongTime.lfFaceName, _countof(logFontSongTime.lfFaceName), "Arial");
+    logFontSongTime.lfHeight = 20;
+    logFontSongTime.lfWidth = 10;
+    logFontSongTime.lfWeight = 10;
+    logFontSongTime.lfEscapement = 0;
+    HFONT hSongTimeFont = CreateFontIndirect(&logFontSongTime);
+    RECT textSongTimeRect;
+    textSongTimeRect.left = rect.left + 5;
+    textSongTimeRect.top = rect.top + 65;
+    textSongTimeRect.right = 200;
+    textSongTimeRect.bottom = 150;
+
+    SelectObject(hdc, hSongTimeFont);
+    DrawText(hdc, L"00:00:00/00:00:00", -1, &textSongTimeRect, DT_LEFT);
+    DeleteObject(hSongTimeFont);
+
     EndPaint(hWnd, &ps);
 }
 
@@ -284,20 +289,18 @@ void ProcessWM_CREATE(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     bbStop.LoadButton(MAKEINTRESOURCE(IDB_BBSTOP));
     bbNext.LoadButton(MAKEINTRESOURCE(IDB_BBNEXT));
     bbPrevious.LoadButton(MAKEINTRESOURCE(IDB_BBPREVIOUS));
-    bbRewindBack.LoadButton(MAKEINTRESOURCE(IDB_BBREWINDBACK));
-    bbRewindForward.LoadButton(MAKEINTRESOURCE(IDB_BBREWINDFORWARD));
 
     RECT rect;
     GetClientRect(hWnd, &rect);
     int y = rect.bottom - bbPlay.GetHeight();
 
-    bbPlay.Create(hWnd, (rect.right * 4 / 12) - bbPlay.GetWidth() / 2, y);
-    bbPause.Create(hWnd, (rect.right * 3 / 12) - bbPause.GetWidth() / 2, y);
-    bbStop.Create(hWnd, (rect.right * 5 / 12) - bbStop.GetWidth() / 2, y);
-    bbNext.Create(hWnd, (rect.right * 6 / 12) - bbNext.GetWidth() / 2, y);
-    bbPrevious.Create(hWnd, (rect.right * 2 / 12) - bbPrevious.GetWidth() / 2, y);
-    bbRewindBack.Create(hWnd, (rect.right * 1 / 12) - bbRewindBack.GetWidth() / 2, y);
-    bbRewindForward.Create(hWnd, (rect.right * 7 / 12) - bbRewindForward.GetWidth() / 2, y);
+    bbPlay.Create(hWnd, (rect.right * 3 / 10) - bbPlay.GetWidth() / 2, y);
+    bbPause.Create(hWnd, (rect.right * 2 / 10) - bbPause.GetWidth() / 2, y);
+    bbStop.Create(hWnd, (rect.right * 4 / 10) - bbStop.GetWidth() / 2, y);
+    bbNext.Create(hWnd, (rect.right * 5 / 10) - bbNext.GetWidth() / 2, y);
+    bbPrevious.Create(hWnd, (rect.right * 1 / 10) - bbPrevious.GetWidth() / 2, y);
+
+    progressbar.LoadCoordinates(0, rect.bottom / 2, rect.right, rect.bottom / 6);
 }
 
 /// <summary>
@@ -312,14 +315,19 @@ void ProcessWM_COMMAND(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     if (LOWORD(wParam) == bbPlay.GetMenuValue())
     {
         MessageBox(hWnd, L"Play", L"Play", MB_OK);
+        SetTimer(hWnd, 1, 100, NULL);
     }
     else if (LOWORD(wParam) == bbPause.GetMenuValue())
     {
+        KillTimer(hWnd, 1);
         MessageBox(hWnd, L"Pause", L"Pause", MB_OK);
     }
     else if (LOWORD(wParam) == bbStop.GetMenuValue())
     {
+        KillTimer(hWnd, 1);
         MessageBox(hWnd, L"Stop", L"Stop", MB_OK);
+        progressbar.SetProgress(0);
+        InvalidateRect(hWnd, NULL, TRUE);
     }
     else if (LOWORD(wParam) == bbNext.GetMenuValue())
     {
@@ -328,14 +336,6 @@ void ProcessWM_COMMAND(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     else if (LOWORD(wParam) == bbPrevious.GetMenuValue())
     {
         MessageBox(hWnd, L"Previous", L"Previous", MB_OK);
-    }
-    else if (LOWORD(wParam) == bbRewindBack.GetMenuValue())
-    {
-        MessageBox(hWnd, L"RewindBack", L"RewindBack", MB_OK);
-    }
-    else if (LOWORD(wParam) == bbRewindForward.GetMenuValue())
-    {
-        MessageBox(hWnd, L"RewindForward", L"RewindForward", MB_OK);
     }
     else if (LOWORD(wParam) == IDM_EXIT)
     {
@@ -389,6 +389,36 @@ void ProcessWM_NOTIFYCALLBACK(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
         }
         break;
     }
+}
+
+/// <summary>
+/// Обрабатывает нажатие левой клавиши мыши
+/// </summary>
+/// <param name="hWnd"></param>
+/// <param name="message"></param>
+/// <param name="wParam"></param>
+/// <param name="lParam"></param>
+void ProcessWM_LBUTTONDOWN(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    POINT ptMousePos = { LOWORD(lParam), HIWORD(lParam) };
+    if (progressbar.CheckPoint(ptMousePos.x, ptMousePos.y))
+    {
+        progressbar.SetProgress(ptMousePos.x);
+        InvalidateRect(hWnd, NULL, TRUE);
+    }
+}
+
+/// <summary>
+/// Обрабатывает сообщения от таймера
+/// </summary>
+/// <param name="hWnd"></param>
+/// <param name="message"></param>
+/// <param name="wParam"></param>
+/// <param name="lParam"></param>
+void ProcessWM_TIMER(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    progressbar.Update();
+    InvalidateRect(hWnd, NULL, TRUE);
 }
 
 /// <summary>

@@ -33,6 +33,15 @@
     <ClInclude Include="roundbutton.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
+    <ClInclude Include="soundtrackprogressbar.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="textbox.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="MediaPlayer.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Foudre.cpp">
@@ -42,6 +51,15 @@
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="roundbutton.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="soundtrackprogressbar.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="textbox.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="MediaPlayer.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
   </ItemGroup>
@@ -54,28 +72,19 @@
     <Image Include="..\..\..\Files\Icon\Icon.ico">
       <Filter>Файлы ресурсов</Filter>
     </Image>
-    <Image Include="..\..\..\Files\Buttons\bmp\play.bmp">
+    <Image Include="..\..\..\Files\Buttons\new\bmp\playsmall.bmp">
       <Filter>Файлы ресурсов</Filter>
     </Image>
-    <Image Include="..\..\..\Files\Buttons\bmp\playsmall.bmp">
+    <Image Include="..\..\..\Files\Buttons\new\bmp\nextsmall.bmp">
       <Filter>Файлы ресурсов</Filter>
     </Image>
-    <Image Include="..\..\..\Files\Buttons\bmp\nextsmall.bmp">
+    <Image Include="..\..\..\Files\Buttons\new\bmp\pausesmall.bmp">
       <Filter>Файлы ресурсов</Filter>
     </Image>
-    <Image Include="..\..\..\Files\Buttons\bmp\pausesmall.bmp">
+    <Image Include="..\..\..\Files\Buttons\new\bmp\stopsmall.bmp">
       <Filter>Файлы ресурсов</Filter>
     </Image>
-    <Image Include="..\..\..\Files\Buttons\bmp\stopsmall.bmp">
-      <Filter>Файлы ресурсов</Filter>
-    </Image>
-    <Image Include="..\..\..\Files\Buttons\bmp\rewindforwardsmall.bmp">
-      <Filter>Файлы ресурсов</Filter>
-    </Image>
-    <Image Include="..\..\..\Files\Buttons\bmp\rewindbacksmall.bmp">
-      <Filter>Файлы ресурсов</Filter>
-    </Image>
-    <Image Include="..\..\..\Files\Buttons\bmp\previoussmall.bmp">
+    <Image Include="..\..\..\Files\Buttons\new\bmp\previoussmall.bmp">
       <Filter>Файлы ресурсов</Filter>
     </Image>
   </ItemGroup>
