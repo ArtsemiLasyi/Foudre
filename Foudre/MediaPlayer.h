@@ -1,13 +1,22 @@
 #pragma once
 
-#include "soundtrackprogressbar.h"
+#include "SoundtrackProgressbar.h"
+#include "TextBox.h"
 
 class MediaPlayer
 {
 public:
-	SoundtrackProgressbar progressBar;
+	SoundtrackProgressBar ProgressBar;
+	TextBox TextBoxSong;
+	TextBox TextBoxTime;
 
-
+	MediaPlayer();
+	MediaPlayer(RECT rect);
+	~MediaPlayer();
+	void LoadSong();
+	void Init(RECT rect);
+	void Display(HDC hdc);
+	void Update();
 private:
 };
 

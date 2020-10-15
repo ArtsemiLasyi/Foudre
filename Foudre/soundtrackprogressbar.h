@@ -1,13 +1,13 @@
 #include <Windows.h>
 
 #pragma once
-class SoundtrackProgressbar
+class SoundtrackProgressBar
 {
 public:
-	SoundtrackProgressbar();
-	SoundtrackProgressbar(int x, int y);
-	SoundtrackProgressbar(int x, int y, int width, int height);
-	~SoundtrackProgressbar();
+	SoundtrackProgressBar();
+	SoundtrackProgressBar(int x, int y);
+	SoundtrackProgressBar(int x, int y, int width, int height);
+	~SoundtrackProgressBar();
 	bool CheckPoint(int x, int y);
 	void LoadCoordinates(int x, int y, int width, int height);
 	int getRedBorder();

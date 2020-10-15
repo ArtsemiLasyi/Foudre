@@ -1,10 +1,12 @@
 ﻿#include "framework.h"
 #include "Foudre.h"
 #include "ProgramInfo.h"
-#include "roundbutton.h"
+#include "RoundButton.h"
 #include <shellapi.h>
 #include <strsafe.h>
-#include "soundtrackprogressbar.h"
+#include "SoundtrackProgressbar.h"
+#include "TextBox.h"
+#include "MediaPlayer.h"
 
 #pragma comment(linker, "\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
@@ -29,8 +31,9 @@ RoundButton bbPause(1003);
 RoundButton bbPrevious(1004);
 RoundButton bbNext(1005);
 
-// Прогрессбар
-SoundtrackProgressbar progressbar;
+// Составные части медиаплеера
+MediaPlayer mediaPlayer;
+
 
 // Структура для отображения уведомлений в области уведомлений
 NOTIFYICONDATA notifyIconData;
@@ -229,49 +232,7 @@ void ProcessWM_PAINT(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     HDC hdc = BeginPaint(hWnd, &ps);
     GetClientRect(hWnd, &rect);
 
-    progressbar.Paint(hdc);
-
-    SetBkMode(hdc, TRANSPARENT);
-
-    static LOGFONT logFontSong;
-    logFontSong.lfCharSet = DEFAULT_CHARSET;
-    logFontSong.lfPitchAndFamily = DEFAULT_PITCH;
-    strcpy_s((char*)logFontSong.lfFaceName, _countof(logFontSong.lfFaceName), "Arial");
-    logFontSong.lfHeight = 30;
-    logFontSong.lfWidth = 15;
-    logFontSong.lfWeight = 20;
-    logFontSong.lfEscapement = 0;
-    HFONT hSongFont = CreateFontIndirect(&logFontSong);
-    RECT textSongRect;
-    textSongRect.left = rect.right / 2 - 150;
-    textSongRect.top = rect.bottom / 2 - 50;
-    textSongRect.right = rect.right / 2 + 150;
-    textSongRect.bottom = rect.bottom / 2 + 50;
-
-    SelectObject(hdc, hSongFont);
-    DrawText(hdc, L"Крутая песня", -1, &textSongRect, DT_CENTER);
-    DeleteObject(hSongFont);
-
-
-    static LOGFONT logFontSongTime;
-    logFontSongTime.lfCharSet = DEFAULT_CHARSET;
-    logFontSongTime.lfPitchAndFamily = DEFAULT_PITCH;
-    strcpy_s((char*)logFontSongTime.lfFaceName, _countof(logFontSongTime.lfFaceName), "Arial");
-    logFontSongTime.lfHeight = 20;
-    logFontSongTime.lfWidth = 10;
-    logFontSongTime.lfWeight = 10;
-    logFontSongTime.lfEscapement = 0;
-    HFONT hSongTimeFont = CreateFontIndirect(&logFontSongTime);
-    RECT textSongTimeRect;
-    textSongTimeRect.left = rect.left + 5;
-    textSongTimeRect.top = rect.top + 65;
-    textSongTimeRect.right = 200;
-    textSongTimeRect.bottom = 150;
-
-    SelectObject(hdc, hSongTimeFont);
-    DrawText(hdc, L"00:00:00/00:00:00", -1, &textSongTimeRect, DT_LEFT);
-    DeleteObject(hSongTimeFont);
-
+    mediaPlayer.Display(hdc);
     EndPaint(hWnd, &ps);
 }
 
@@ -300,7 +261,8 @@ void ProcessWM_CREATE(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     bbNext.Create(hWnd, (rect.right * 5 / 10) - bbNext.GetWidth() / 2, y);
     bbPrevious.Create(hWnd, (rect.right * 1 / 10) - bbPrevious.GetWidth() / 2, y);
 
-    progressbar.LoadCoordinates(0, rect.bottom / 2, rect.right, rect.bottom / 6);
+    mediaPlayer.Init(rect);
+
 }
 
 /// <summary>
@@ -326,7 +288,7 @@ void ProcessWM_COMMAND(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
         KillTimer(hWnd, 1);
         MessageBox(hWnd, L"Stop", L"Stop", MB_OK);
-        progressbar.SetProgress(0);
+        mediaPlayer.ProgressBar.SetProgress(0);
         InvalidateRect(hWnd, NULL, TRUE);
     }
     else if (LOWORD(wParam) == bbNext.GetMenuValue())
@@ -401,9 +363,9 @@ void ProcessWM_NOTIFYCALLBACK(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 void ProcessWM_LBUTTONDOWN(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     POINT ptMousePos = { LOWORD(lParam), HIWORD(lParam) };
-    if (progressbar.CheckPoint(ptMousePos.x, ptMousePos.y))
+    if (mediaPlayer.ProgressBar.CheckPoint(ptMousePos.x, ptMousePos.y))
     {
-        progressbar.SetProgress(ptMousePos.x);
+        mediaPlayer.ProgressBar.SetProgress(ptMousePos.x);
         InvalidateRect(hWnd, NULL, TRUE);
     }
 }
@@ -416,8 +378,8 @@ void ProcessWM_LBUTTONDOWN(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
 /// <param name="wParam"></param>
 /// <param name="lParam"></param>
 void ProcessWM_TIMER(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-    progressbar.Update();
+{  
+    mediaPlayer.Update();
     InvalidateRect(hWnd, NULL, TRUE);
 }
 
