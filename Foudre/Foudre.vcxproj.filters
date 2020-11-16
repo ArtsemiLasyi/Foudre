@@ -47,6 +47,13 @@
     <ClCompile Include="Foudre.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="Player.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="TopoBuilder.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="Song.cpp">
     <ClCompile Include="ProgramInfo.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>

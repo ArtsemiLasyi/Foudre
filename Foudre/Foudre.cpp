@@ -1,4 +1,4 @@
-﻿#include "framework.h"
+#include "framework.h"
 #include "Foudre.h"
 #include "ProgramInfo.h"
 #include "RoundButton.h"
