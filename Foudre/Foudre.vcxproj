@@ -139,13 +139,21 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Common.h" />
     <ClInclude Include="Foudre.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="MF.h" />
+    <ClInclude Include="Player.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="Song.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="TopoBuilder.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Foudre.cpp" />
+    <ClCompile Include="Player.cpp" />
+    <ClCompile Include="Song.cpp" />
+    <ClCompile Include="TopoBuilder.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Foudre.rc" />
