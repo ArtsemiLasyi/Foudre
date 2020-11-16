@@ -1,10 +1,17 @@
-﻿// Foudre.cpp : Определяет точку входа для приложения.
-// Это аудиоплеер
-
 #include "framework.h"
 #include "Foudre.h"
+#include "ProgramInfo.h"
+#include "RoundButton.h"
+#include <shellapi.h>
+#include <strsafe.h>
+#include "SoundtrackProgressbar.h"
+#include "TextBox.h"
+#include "MediaPlayer.h"
+
+#pragma comment(linker, "\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
 #define MAX_LOADSTRING 100
+#define IDM_EXIT 10000
 
 // Глобальные переменные:
 HINSTANCE hInst;                                // текущий экземпляр
@@ -13,10 +20,52 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // имя класса глав�
 
 // Отправить объявления функций, включенных в этот модуль кода:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
-BOOL                InitInstance(HINSTANCE, int);
+BOOL                InitInstance(HINSTANCE, int, ProgramInfo*);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
+// Круглые кнопки
+RoundButton bbPlay(1001);
+RoundButton bbStop(1002);
+RoundButton bbPause(1003);
+RoundButton bbPrevious(1004);
+RoundButton bbNext(1005);
+
+// Составные части медиаплеера
+MediaPlayer mediaPlayer;
+
+
+// Структура для отображения уведомлений в области уведомлений
+NOTIFYICONDATA notifyIconData;
+UINT const WMAPP_NOTIFYCALLBACK = WM_APP + 1;
+
+// Объявление функций
+void ProcessWM_PAINT(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+
+void ProcessWM_CREATE(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+
+void ProcessWM_COMMAND(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+
+void ProcessWM_SIZE(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+
+void ProcessWM_LBUTTONDOWN(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+
+void ProcessWM_NOTIFYCALLBACK(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+
+void ProcessWM_TIMER(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+
+void CreateNotifyIcon(HWND hWnd, NOTIFYICONDATA* nf);
+
+void CreateNotifyIconContextMenu(HWND hWnd);
+
+/// <summary>
+/// Входная точка программы
+/// </summary>
+/// <param name="hInstance"></param>
+/// <param name="hPrevInstance"></param>
+/// <param name="lpCmdLine"></param>
+/// <param name="nCmdShow"></param>
+/// <returns></returns>
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
                      _In_ LPWSTR    lpCmdLine,
@@ -25,15 +74,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
-    // TODO: Разместите код здесь.
+    ProgramInfo programinfo;
 
-    // Инициализация глобальных строк
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_FOUDRE, szWindowClass, MAX_LOADSTRING);
     MyRegisterClass(hInstance);
 
-    // Выполнить инициализацию приложения:
-    if (!InitInstance (hInstance, nCmdShow))
+    if (!InitInstance (hInstance, nCmdShow, &programinfo))
     {
         return FALSE;
     }
@@ -42,7 +89,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     MSG msg;
 
-    // Цикл основного сообщения:
     while (GetMessage(&msg, nullptr, 0, 0))
     {
         if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
@@ -55,13 +101,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     return (int) msg.wParam;
 }
 
-
-
-//
-//  ФУНКЦИЯ: MyRegisterClass()
-//
-//  ЦЕЛЬ: Регистрирует класс окна.
-//
+/// <summary>
+/// Региструет главный оконный класс
+/// </summary>
+/// <param name="hInstance"></param>
+/// <returns></returns>
 ATOM MyRegisterClass(HINSTANCE hInstance)
 {
     WNDCLASSEXW wcex;
@@ -73,32 +117,30 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
     wcex.cbClsExtra     = 0;
     wcex.cbWndExtra     = 0;
     wcex.hInstance      = hInstance;
-    wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_FOUDRE));
+    wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_APPICON));
     wcex.hCursor        = LoadCursor(nullptr, IDC_ARROW);
     wcex.hbrBackground  = (HBRUSH)(COLOR_WINDOW+1);
-    wcex.lpszMenuName   = MAKEINTRESOURCEW(IDC_FOUDRE);
+    wcex.lpszMenuName = 0;
     wcex.lpszClassName  = szWindowClass;
-    wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+    wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_APPICON));
 
     return RegisterClassExW(&wcex);
 }
 
-//
-//   ФУНКЦИЯ: InitInstance(HINSTANCE, int)
-//
-//   ЦЕЛЬ: Сохраняет маркер экземпляра и создает главное окно
-//
-//   КОММЕНТАРИИ:
-//
-//        В этой функции маркер экземпляра сохраняется в глобальной переменной, а также
-//        создается и выводится главное окно программы.
-//
-BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
+/// <summary>
+/// Создает главное окно приложения
+/// </summary>
+/// <param name="hInstance"></param>
+/// <param name="nCmdShow"></param>
+/// <param name="programinfo"></param>
+/// <returns></returns>
+BOOL InitInstance(HINSTANCE hInstance, int nCmdShow, ProgramInfo* programinfo)
 {
-   hInst = hInstance; // Сохранить маркер экземпляра в глобальной переменной
+   hInst = hInstance;
 
-   HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
+   HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_DLGFRAME | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZE,
+      programinfo->getX(), programinfo->getY(), programinfo->getWidth(), programinfo->getHeight(), 
+       nullptr, nullptr, hInstance, nullptr);
 
    if (!hWnd)
    {
@@ -111,70 +153,264 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    return TRUE;
 }
 
-//
-//  ФУНКЦИЯ: WndProc(HWND, UINT, WPARAM, LPARAM)
-//
-//  ЦЕЛЬ: Обрабатывает сообщения в главном окне.
-//
-//  WM_COMMAND  - обработать меню приложения
-//  WM_PAINT    - Отрисовка главного окна
-//  WM_DESTROY  - отправить сообщение о выходе и вернуться
-//
-//
+/// <summary>
+/// Обрабатывает сообщения главного окна приложения
+/// </summary>
+/// <param name="hWnd"></param>
+/// <param name="message"></param>
+/// <param name="wParam"></param>
+/// <param name="lParam"></param>
+/// <returns></returns>
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
-    case WM_COMMAND:
+        case WM_CREATE:
         {
-            int wmId = LOWORD(wParam);
-            // Разобрать выбор в меню:
-            switch (wmId)
-            {
-            case IDM_ABOUT:
-                DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
-                break;
-            case IDM_EXIT:
-                DestroyWindow(hWnd);
-                break;
-            default:
-                return DefWindowProc(hWnd, message, wParam, lParam);
-            }
+            ProcessWM_CREATE(hWnd, message, wParam, lParam);
         }
         break;
-    case WM_PAINT:
+
+        case WM_TIMER:
         {
-            PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hWnd, &ps);
-            // TODO: Добавьте сюда любой код прорисовки, использующий HDC...
-            EndPaint(hWnd, &ps);
+            ProcessWM_TIMER(hWnd, message, wParam, lParam);
         }
         break;
-    case WM_DESTROY:
-        PostQuitMessage(0);
+
+        case WM_COMMAND:
+        {
+            ProcessWM_COMMAND(hWnd, message, wParam, lParam);
+        }
         break;
-    default:
-        return DefWindowProc(hWnd, message, wParam, lParam);
+
+        case WM_PAINT:
+        {
+            ProcessWM_PAINT(hWnd, message, wParam, lParam);
+        }
+        break;
+
+        case WMAPP_NOTIFYCALLBACK:
+        {
+            ProcessWM_NOTIFYCALLBACK(hWnd, message, wParam, lParam);
+        }
+        break;
+
+        case WM_LBUTTONDOWN:
+        {
+            ProcessWM_LBUTTONDOWN(hWnd, message, wParam, lParam);
+        }
+        break;
+
+        case WM_DESTROY:
+        {
+            PostQuitMessage(0);
+        }
+        break;
+
+        case WM_SIZE:
+        {
+            ProcessWM_SIZE(hWnd, message, wParam, lParam);
+        }
+
+        default:
+            return DefWindowProc(hWnd, message, wParam, lParam);
     }
     return 0;
 }
 
-// Обработчик сообщений для окна "О программе".
-INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+/// <summary>
+/// Обрабатывает сообщение WM_PAINT
+/// </summary>
+/// <param name="hWnd"></param>
+/// <param name="message"></param>
+/// <param name="wParam"></param>
+/// <param name="lParam"></param>
+void ProcessWM_PAINT(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    UNREFERENCED_PARAMETER(lParam);
-    switch (message)
-    {
-    case WM_INITDIALOG:
-        return (INT_PTR)TRUE;
+    PAINTSTRUCT ps;
+    RECT rect;
+    HDC hdc = BeginPaint(hWnd, &ps);
+    GetClientRect(hWnd, &rect);
 
-    case WM_COMMAND:
-        if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
+    mediaPlayer.Display(hdc);
+    EndPaint(hWnd, &ps);
+}
+
+/// <summary>
+/// Обрабатывает сообщение WM_CREATE
+/// </summary>
+/// <param name="hWnd"></param>
+/// <param name="message"></param>
+/// <param name="wParam"></param>
+/// <param name="lParam"></param>
+void ProcessWM_CREATE(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    bbPlay.LoadButton(MAKEINTRESOURCE(IDB_BBPLAY));
+    bbPause.LoadButton(MAKEINTRESOURCE(IDB_BBPAUSE));
+    bbStop.LoadButton(MAKEINTRESOURCE(IDB_BBSTOP));
+    bbNext.LoadButton(MAKEINTRESOURCE(IDB_BBNEXT));
+    bbPrevious.LoadButton(MAKEINTRESOURCE(IDB_BBPREVIOUS));
+
+    RECT rect;
+    GetClientRect(hWnd, &rect);
+    int y = rect.bottom - bbPlay.GetHeight();
+
+    bbPlay.Create(hWnd, (rect.right * 3 / 10) - bbPlay.GetWidth() / 2, y);
+    bbPause.Create(hWnd, (rect.right * 2 / 10) - bbPause.GetWidth() / 2, y);
+    bbStop.Create(hWnd, (rect.right * 4 / 10) - bbStop.GetWidth() / 2, y);
+    bbNext.Create(hWnd, (rect.right * 5 / 10) - bbNext.GetWidth() / 2, y);
+    bbPrevious.Create(hWnd, (rect.right * 1 / 10) - bbPrevious.GetWidth() / 2, y);
+
+    mediaPlayer.Init(rect);
+
+}
+
+/// <summary>
+/// Обрабатывает сообщение WM_COMMAND
+/// </summary>
+/// <param name="hWnd"></param>
+/// <param name="message"></param>
+/// <param name="wParam"></param>
+/// <param name="lParam"></param>
+void ProcessWM_COMMAND(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    if (LOWORD(wParam) == bbPlay.GetMenuValue())
+    {
+        MessageBox(hWnd, L"Play", L"Play", MB_OK);
+        SetTimer(hWnd, 1, 100, NULL);
+    }
+    else if (LOWORD(wParam) == bbPause.GetMenuValue())
+    {
+        KillTimer(hWnd, 1);
+        MessageBox(hWnd, L"Pause", L"Pause", MB_OK);
+    }
+    else if (LOWORD(wParam) == bbStop.GetMenuValue())
+    {
+        KillTimer(hWnd, 1);
+        MessageBox(hWnd, L"Stop", L"Stop", MB_OK);
+        mediaPlayer.ProgressBar.SetProgress(0);
+        InvalidateRect(hWnd, NULL, TRUE);
+    }
+    else if (LOWORD(wParam) == bbNext.GetMenuValue())
+    {
+        MessageBox(hWnd, L"Next", L"Next", MB_OK);
+    }
+    else if (LOWORD(wParam) == bbPrevious.GetMenuValue())
+    {
+        MessageBox(hWnd, L"Previous", L"Previous", MB_OK);
+    }
+    else if (LOWORD(wParam) == IDM_EXIT)
+    {
+        DestroyWindow(hWnd);
+    }
+}
+
+/// <summary>
+/// Обрабатывает сообщение WM_SIZE
+/// </summary>
+/// <param name="hWnd"></param>
+/// <param name="message"></param>
+/// <param name="wParam"></param>
+/// <param name="lParam"></param>
+void ProcessWM_SIZE(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    if (wParam == SIZE_MINIMIZED)
+    {    
+        CreateNotifyIcon(hWnd, &notifyIconData);
+        Shell_NotifyIcon(NIM_ADD, &notifyIconData);
+        ShowWindow(hWnd, SW_HIDE);
+    }
+
+    if (wParam == SIZE_RESTORED)
+    {
+        Shell_NotifyIcon(NIM_DELETE, &notifyIconData);
+    }
+}
+
+/// <summary>
+/// Обработка сообщений из области уведомлений
+/// </summary>
+/// <param name="hWnd"></param>
+/// <param name="message"></param>
+/// <param name="wParam"></param>
+/// <param name="lParam"></param>
+void ProcessWM_NOTIFYCALLBACK(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    switch (LOWORD(lParam))
+    {
+        case WM_LBUTTONDOWN:
         {
-            EndDialog(hDlg, LOWORD(wParam));
-            return (INT_PTR)TRUE;
+            ShowWindow(hWnd, SW_SHOW);
+            ShowWindow(hWnd, SW_RESTORE);
+        }
+        break;
+
+        case WM_RBUTTONDOWN:
+        {
+            CreateNotifyIconContextMenu(hWnd);
         }
         break;
     }
-    return (INT_PTR)FALSE;
+}
+
+/// <summary>
+/// Обрабатывает нажатие левой клавиши мыши
+/// </summary>
+/// <param name="hWnd"></param>
+/// <param name="message"></param>
+/// <param name="wParam"></param>
+/// <param name="lParam"></param>
+void ProcessWM_LBUTTONDOWN(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    POINT ptMousePos = { LOWORD(lParam), HIWORD(lParam) };
+    if (mediaPlayer.ProgressBar.CheckPoint(ptMousePos.x, ptMousePos.y))
+    {
+        mediaPlayer.ProgressBar.SetProgress(ptMousePos.x);
+        InvalidateRect(hWnd, NULL, TRUE);
+    }
+}
+
+/// <summary>
+/// Обрабатывает сообщения от таймера
+/// </summary>
+/// <param name="hWnd"></param>
+/// <param name="message"></param>
+/// <param name="wParam"></param>
+/// <param name="lParam"></param>
+void ProcessWM_TIMER(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{  
+    mediaPlayer.Update();
+    InvalidateRect(hWnd, NULL, TRUE);
+}
+
+/// <summary>
+/// Создает иконку в панели уведомлений
+/// </summary>
+/// <param name="hWnd"></param>
+/// <param name="nf"></param>
+void CreateNotifyIcon(HWND hWnd, NOTIFYICONDATA* nf)
+{
+    nf->hWnd = hWnd;
+    nf->uID = NULL;
+    nf->uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+    StringCchCopy(nf->szTip, ARRAYSIZE(nf->szTip), L"Foudre");
+    nf->uCallbackMessage = WMAPP_NOTIFYCALLBACK;
+    nf->hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_APPICON));
+}
+
+/// <summary>
+/// Создает в панели уведомлений контекстное меню
+/// </summary>
+/// <param name="hWnd"></param>
+void CreateNotifyIconContextMenu(HWND hWnd)
+{
+    POINT point;
+    GetCursorPos(&point);
+    HMENU hPopupMenu = CreatePopupMenu();
+    InsertMenu(hPopupMenu, 0, MF_BYPOSITION | MF_STRING, IDM_EXIT, L"Exit");
+    InsertMenu(hPopupMenu, 0, MF_BYPOSITION | MF_SEPARATOR, 0, L"");
+    InsertMenu(hPopupMenu, 0, MF_BYPOSITION | MF_STRING, bbPause.GetMenuValue(), L"Pause");
+    InsertMenu(hPopupMenu, 0, MF_BYPOSITION | MF_STRING, bbPlay.GetMenuValue(), L"Play");
+    SetForegroundWindow(hWnd);
+    TrackPopupMenuEx(hPopupMenu, TPM_BOTTOMALIGN | TPM_LEFTALIGN, point.x, point.y, hWnd, NULL);
 }
