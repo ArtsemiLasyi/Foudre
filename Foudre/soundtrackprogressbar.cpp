@@ -131,6 +131,16 @@ void SoundtrackProgressBar::SetProgress(int x)
 	this->progressX = x;
 }
 
+int SoundtrackProgressBar::getProgress()
+{
+	return this->progressX;
+}
+
+int SoundtrackProgressBar::getWidth()
+{
+	return this->width;
+}
+
 void SoundtrackProgressBar::SetDelta(int delta)
 {
 	this->delta = delta;

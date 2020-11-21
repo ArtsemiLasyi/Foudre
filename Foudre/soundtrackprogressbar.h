@@ -18,7 +18,9 @@ public:
 	int getBlueRegion();
 	void Paint(HDC hdc);
 	void Update();
+	int getWidth();
 	void SetProgress(int x);
+	int getProgress();
 	void SetDelta(int delta);
 	int getIndent();
 private:

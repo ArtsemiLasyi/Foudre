@@ -36,10 +36,10 @@ TextBox::~TextBox()
 
 }
 
-void TextBox::SetText(LPCWSTR text)
+void TextBox::SetText(std::wstring text)
 {
 	this->text = text;
-}
+};
 
 void TextBox::SetRect(RECT rect)
 {
@@ -61,7 +61,7 @@ void TextBox::ShowText(HDC hdc, int styles)
 {
 	HFONT hSongFont = CreateFontIndirect(&logFont);
 	SelectObject(hdc, hSongFont);
-	DrawText(hdc, this->text, -1, &this->rect, styles);
+	DrawText(hdc, this->text.c_str(), -1, &this->rect, styles);
 	DeleteObject(hSongFont);
 }
 
