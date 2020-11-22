@@ -3,6 +3,10 @@
 #define CMD_PENDING      0x01
 #define CMD_PENDING_SEEK 0x02
 
+//// {2715279F-4139-4ba0-9CB1-B351F1B58A4A}
+//static const GUID AudioSessionVolumeCtx =
+//{ 0x2715279f, 0x4139, 0x4ba0, { 0x9c, 0xb1, 0xb3, 0x51, 0xf1, 0xb5, 0x8a, 0x4a } };
+
 Player::Player(HRESULT *pHR)
 {
 	closeCompleteEvent = NULL;
@@ -30,6 +34,8 @@ Player::Player(HRESULT *pHR)
 			}
 		}
 	}
+
+	//hr = InitializeAudioSession();
 
 	*pHR = hr;
 }
@@ -492,13 +498,15 @@ HRESULT Player::ProcessMediaEvent(CComPtr<IMFMediaEvent>& mediaEvent)
 HRESULT Player::OnTopologyReady()
 {
 	HRESULT hr = S_OK;
-	CComQIPtr<IMFClock> _clock;
+	CComPtr<IMFClock> _clock;
 
 	hr = session->GetClock(&_clock);
 	if (SUCCEEDED(hr))
 	{
 		hr = _clock->QueryInterface(IID_PPV_ARGS(&clock));
 	}
+
+	hr = MFGetService(session, MR_POLICY_VOLUME_SERVICE, IID_IMFSimpleAudioVolume, (void**)&simpleAudioVolume);
 
 	hr = Play();
 	return hr;
@@ -526,6 +534,7 @@ HRESULT Player::SetPositionInternal(const MFTIME& position)
 
 	if (SUCCEEDED(hr))
 	{
+		// Store the pending state.
 		currentState.state = PlayerState::Started;
 		currentState.start = position;
 		IsPending = CMD_PENDING_SEEK;
@@ -546,6 +555,9 @@ HRESULT Player::UpdatePendingCommands(PlayerState state)
 	{
 		IsPending = FALSE;
 
+		// The current pending command has completed.
+
+		// Now look for seek requests.
 		switch (pendingRequest.state)
 		{
 		case PlayerState::Started:
@@ -567,5 +579,35 @@ HRESULT Player::UpdatePendingCommands(PlayerState state)
 		pendingRequest.state = PlayerState::Closed;
 	}
 
+	return hr;
+}
+
+HRESULT Player::GetVolume(float* volume)
+{
+	HRESULT hr = S_OK;
+
+	if (simpleAudioVolume == NULL)
+	{
+		hr = E_FAIL;
+	}
+	else
+	{
+		hr = simpleAudioVolume->GetMasterVolume(volume);
+	}
+	return hr;
+}
+
+HRESULT Player::SetVolume(float volume)
+{
+	HRESULT hr = S_OK;
+
+	if (simpleAudioVolume == NULL)
+	{
+		hr = E_FAIL;
+	}
+	else
+	{
+		hr = simpleAudioVolume->SetMasterVolume(volume);
+	}
 	return hr;
 }

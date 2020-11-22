@@ -84,6 +84,20 @@ public:
     /// <returns></returns>
     HRESULT SetPosition(MFTIME position);
 
+    /// <summary>
+    /// Получить текущую громкость
+    /// </summary>
+    /// <param name="volume"></param>
+    /// <returns></returns>
+    HRESULT GetVolume(float* volume);
+
+    /// <summary>
+    /// Установить громкость
+    /// </summary>
+    /// <param name="volume"></param>
+    /// <returns></returns>
+    HRESULT SetVolume(float volume);
+
     // IMFAsyncCallback implementation
     STDMETHODIMP GetParameters(DWORD* pdwFlags, DWORD* pdwQueue);
     STDMETHODIMP Invoke(IMFAsyncResult* asyncResult);
@@ -195,5 +209,10 @@ private:
     /// <param name="state"></param>
     /// <returns></returns>
     HRESULT UpdatePendingCommands(PlayerState state);
+
+    /// <summary>
+    /// Регулировщик громкости
+    /// </summary>
+    CComPtr<IMFSimpleAudioVolume> simpleAudioVolume;
 };
 
