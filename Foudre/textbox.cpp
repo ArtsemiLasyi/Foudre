@@ -41,6 +41,11 @@ void TextBox::SetText(std::wstring text)
 	this->text = text;
 };
 
+std::wstring TextBox::getText()
+{
+	return this->text;
+}
+
 void TextBox::SetRect(RECT rect)
 {
 	this->rect.left = rect.left;

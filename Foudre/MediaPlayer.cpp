@@ -21,7 +21,8 @@ void MediaPlayer::Init(RECT rect)
 {
 
     this->SoundtrackProgressBar.LoadCoordinates(0, rect.bottom / 2, rect.right, rect.bottom / 6);
-    this->VolumeProgressBar.LoadCoordinates(0,0, 50, 50);
+    this->VolumeProgressBar.LoadCoordinates(rect.right - 120 , rect.bottom - 30, 100, 15);
+    this->VolumeProgressBar.SetBorderColors(75, 75, 75);
 
     this->TextBoxSong.SetRect(rect.right / 2 - 150,
         rect.bottom / 2 - 50,
@@ -38,6 +39,7 @@ void MediaPlayer::Init(RECT rect)
 void MediaPlayer::Display(HDC hdc)
 {
     this->SoundtrackProgressBar.Paint(hdc);
+    this->VolumeProgressBar.Paint(hdc);
     SetBkMode(hdc, TRANSPARENT);
     this->TextBoxSong.ShowText(hdc, DT_CENTER);
     this->TextBoxTime.ShowText(hdc, DT_LEFT);
@@ -68,8 +70,32 @@ void MediaPlayer::LoadSong(PCWSTR songname)
     this->player = new Player(&Handle);
     this->song = new Song(songname, &Handle);
     Handle = this->player->OpenURL(songname);
-    this->TextBoxSong.SetText(song->Title);
+    std::wstring songTitle = song->Title;
+    if (songTitle.size() == 0)
+    {
+        std::wstring songName = songname;
+        this->TextBoxSong.SetText(songName);
+    }
+    else
+        this->TextBoxSong.SetText(song->Title);
     this->Update();  
+}
+
+void MediaPlayer::EnableVolume()
+{
+    this->isVolumeEnabled = true;
+    this->player->SetVolume(volume);
+}
+
+bool MediaPlayer::IsVolumeEnabled()
+{
+    return this->isVolumeEnabled;
+}
+
+void MediaPlayer::DisableVolume()
+{
+    this->isVolumeEnabled = false;
+    this->player->SetVolume(0);
 }
 
 void MediaPlayer::SetTimeByProgress(int x)
@@ -82,11 +108,51 @@ void MediaPlayer::SetTimeByProgress(int x)
     this->secondsPlayed = this->ConvertMFTIMEToSeconds(currentTime);
 }
 
+void MediaPlayer::AddProgress()
+{
+    MFTIME time;
+    this->player->GetDuration(&time);
+    int songLength = this->ConvertMFTIMEToSeconds(time);
+    this->secondsPlayed += 10;
+    if (this->secondsPlayed > songLength)
+        this->secondsPlayed = songLength;
+    this->player->SetPosition(this->ConvertSecondsToMFTIME(this->secondsPlayed));
+    this->SoundtrackProgressBar.SetProgress(this->secondsPlayed * this->SoundtrackProgressBar.getWidth() / songLength);
+}
+
+void MediaPlayer::SubstractProgress()
+{
+    MFTIME time;
+    this->player->GetDuration(&time);
+    int songLength = this->ConvertMFTIMEToSeconds(time);
+    this->secondsPlayed -= 10;
+    if (this->secondsPlayed < 0)
+        this->secondsPlayed = 0;
+    this->player->SetPosition(this->ConvertSecondsToMFTIME(this->secondsPlayed));
+    this->SoundtrackProgressBar.SetProgress(this->secondsPlayed * this->SoundtrackProgressBar.getWidth() / songLength);
+}
+
+void MediaPlayer::SetVolumeProgress(int x)
+{
+    this->VolumeProgressBar.SetProgress(x);
+    this->volume = this->MAXVOLUME * this->VolumeProgressBar.getProgress() / this->VolumeProgressBar.getWidth();
+    if (this->IsVolumeEnabled())
+    {
+        this->player->SetVolume(this->volume);
+    }
+}
 
 int MediaPlayer::ConvertMFTIMEToSeconds(MFTIME time)
 {
     const MFTIME ONE_SECOND = 10000000;
     return time / ONE_SECOND;
+}
+
+MFTIME MediaPlayer::ConvertSecondsToMFTIME(int seconds)
+{
+    const MFTIME ONE_SECOND = 10000000;
+    MFTIME temp = ONE_SECOND * seconds;
+    return temp;
 }
 
 std::wstring MediaPlayer::GetTimeInStr(int time)
@@ -98,7 +164,6 @@ std::wstring MediaPlayer::GetTimeInStr(int time)
     int minutes = time / SecondsPerMinute;
     int hours = minutes / MinutesPerHour;
     minutes = minutes % MinutesPerHour;
-
 
     WCHAR arrayseconds[4];
     WCHAR arrayminutes[4];

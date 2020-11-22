@@ -29,11 +29,10 @@ LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
 // Круглые кнопки
-RoundButton bbPlay(IDM_PLAY);
 RoundButton bbStop(1003);
-RoundButton bbPause(IDM_PAUSE);
-RoundButton bbPrevious(IDM_PREVIOUS);
-RoundButton bbNext(IDM_NEXT);
+RoundButton bbPlayPause(IDM_PLAYPAUSE);
+RoundButton bbRewindBack(IDM_REWINDBACK);
+RoundButton bbRewindForward(IDM_REWINDFORWARD);
 RoundButton bbVolume(1008);
 
 // Составные части медиаплеера
@@ -62,6 +61,12 @@ void ProcessWM_TIMER(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 void CreateNotifyIcon(HWND hWnd, NOTIFYICONDATA* nf);
 
 void CreateNotifyIconContextMenu(HWND hWnd);
+
+void Stop(HWND hWnd);
+
+void LoadAndPlay(HWND hWnd, LPCWSTR url);
+
+void RunningLine();
 
 /// <summary>
 /// Входная точка программы
@@ -251,22 +256,20 @@ void ProcessWM_PAINT(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 /// <param name="lParam"></param>
 void ProcessWM_CREATE(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    bbPlay.LoadButton(MAKEINTRESOURCE(IDB_BBPLAY));
-    bbPause.LoadButton(MAKEINTRESOURCE(IDB_BBPAUSE));
+    bbPlayPause.LoadButton(MAKEINTRESOURCE(IDB_BBPLAY));
     bbStop.LoadButton(MAKEINTRESOURCE(IDB_BBSTOP));
-    bbNext.LoadButton(MAKEINTRESOURCE(IDB_BBNEXT));
-    bbPrevious.LoadButton(MAKEINTRESOURCE(IDB_BBPREVIOUS));
+    bbRewindForward.LoadButton(MAKEINTRESOURCE(IDB_BBREWINDFORWARD));
+    bbRewindBack.LoadButton(MAKEINTRESOURCE(IDB_BBREWINDBACK));
     bbVolume.LoadButton(MAKEINTRESOURCE(IDB_BBVOLUMEENABLED));
 
     RECT rect;
     GetClientRect(hWnd, &rect);
-    int y = rect.bottom - bbPlay.GetHeight();
-    bbPlay.Create(hWnd, (rect.right * 3 / 10) - bbPlay.GetWidth() / 2, y);
-    bbPause.Create(hWnd, (rect.right * 2 / 10) - bbPause.GetWidth() / 2, y);
-    bbStop.Create(hWnd, (rect.right * 4 / 10) - bbStop.GetWidth() / 2, y);
-    bbNext.Create(hWnd, (rect.right * 5 / 10) - bbNext.GetWidth() / 2, y);
-    bbPrevious.Create(hWnd, (rect.right * 1 / 10) - bbPrevious.GetWidth() / 2, y);
-    bbVolume.Create(hWnd, (rect.right * 7 / 10) - bbPrevious.GetWidth() / 2, y);
+    int y = rect.bottom - bbPlayPause.GetHeight();
+    bbPlayPause.Create(hWnd, (rect.right * 2 / 10) - bbPlayPause.GetWidth() / 2, y);
+    bbStop.Create(hWnd, (rect.right * 3 / 10) - bbStop.GetWidth() / 2, y);
+    bbRewindForward.Create(hWnd, (rect.right * 4 / 10) - bbRewindForward.GetWidth() / 2, y);
+    bbRewindBack.Create(hWnd, (rect.right * 1 / 10) - bbRewindBack.GetWidth() / 2, y);
+    bbVolume.Create(hWnd, (rect.right * 7 / 10) - bbRewindBack.GetWidth() / 2, y);
     mediaPlayer.Init(rect);
     
     if (wcslen(cmdArg) > 0)
@@ -278,9 +281,7 @@ void ProcessWM_CREATE(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             str = str.substr(index1+1);
         if (index2 != -1)
             str = str.substr(0,index2-1);
-        mediaPlayer.LoadSong(str.c_str());
-        mediaPlayer.player->Play();
-        SetTimer(hWnd, 1, 1000, NULL);
+        LoadAndPlay(hWnd, str.c_str());
         InvalidateRect(hWnd, NULL, TRUE);
     }
 }
@@ -294,41 +295,51 @@ void ProcessWM_CREATE(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 /// <param name="lParam"></param>
 void ProcessWM_COMMAND(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    if (LOWORD(wParam) == bbPlay.GetMenuValue())
+    if (LOWORD(wParam) == bbPlayPause.GetMenuValue())
     {
         PlayerState state = mediaPlayer.player->GetState();
         if ((state == PlayerState::Paused) || (state == PlayerState::Stopped))
         {
             mediaPlayer.player->Play();
             SetTimer(hWnd, 1, 1000, NULL);
+            bbPlayPause.SetBitmap(MAKEINTRESOURCE(IDB_BBPAUSE));
         }
-    }
-    else if (LOWORD(wParam) == bbPause.GetMenuValue())
-    {
-        PlayerState state = mediaPlayer.player->GetState();
-        if (state == PlayerState::Started)
+        else if (state == PlayerState::Started)
         {
             KillTimer(hWnd, 1);
             mediaPlayer.player->Pause();
+            bbPlayPause.SetBitmap(MAKEINTRESOURCE(IDB_BBPLAY));
         }
     }
     else if (LOWORD(wParam) == bbStop.GetMenuValue())
     {
-        KillTimer(hWnd, 1);
-        mediaPlayer.SetTimeByProgress(0);
-        mediaPlayer.Update();
-        mediaPlayer.player->Stop();
+        Stop(hWnd);
         InvalidateRect(hWnd, NULL, TRUE);
     }
-    else if (LOWORD(wParam) == bbNext.GetMenuValue())
+    else if (LOWORD(wParam) == bbRewindForward.GetMenuValue())
     {
+        mediaPlayer.AddProgress();
         mediaPlayer.Update();
         InvalidateRect(hWnd, NULL, TRUE);
     }
-    else if (LOWORD(wParam) == bbPrevious.GetMenuValue())
+    else if (LOWORD(wParam) == bbRewindBack.GetMenuValue())
     {
+        mediaPlayer.SubstractProgress();
         mediaPlayer.Update();
         InvalidateRect(hWnd, NULL, TRUE);
+    }
+    else if (LOWORD(wParam) == bbVolume.GetMenuValue())
+    {
+        if (mediaPlayer.IsVolumeEnabled())
+        {
+            mediaPlayer.DisableVolume();
+            bbVolume.SetBitmap(MAKEINTRESOURCE(IDB_BBVOLUMEDISABLED));
+        }
+        else
+        {
+            mediaPlayer.EnableVolume();
+            bbVolume.SetBitmap(MAKEINTRESOURCE(IDB_BBVOLUMEENABLED));
+        }
     }
     else if (LOWORD(wParam) == IDM_OPENSONG)
     {
@@ -354,14 +365,9 @@ void ProcessWM_COMMAND(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             PlayerState state = mediaPlayer.player->GetState();
             if (state == PlayerState::Started || state == PlayerState::Paused)
             {
-                mediaPlayer.SetTimeByProgress(0);
-                mediaPlayer.Update();
-                mediaPlayer.player->Stop();
-                KillTimer(hWnd, 1);
+                Stop(hWnd);
             }
-            mediaPlayer.LoadSong(ofn.lpstrFile);
-            mediaPlayer.player->Play();
-            SetTimer(hWnd, 1, 1000, NULL);
+            LoadAndPlay(hWnd, ofn.lpstrFile);
             InvalidateRect(hWnd, NULL, TRUE);
         }
     }
@@ -434,10 +440,17 @@ void ProcessWM_LBUTTONDOWN(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
         PlayerState state = mediaPlayer.player->GetState();
         if (state == PlayerState::Started)
         {
-            mediaPlayer.SetTimeByProgress(ptMousePos.x);
+            int progress = ptMousePos.x - mediaPlayer.SoundtrackProgressBar.getRect().left;
+            mediaPlayer.SetTimeByProgress(progress);
             mediaPlayer.Update();
             InvalidateRect(hWnd, NULL, TRUE);
         }
+    }
+    else if (mediaPlayer.VolumeProgressBar.CheckPoint(ptMousePos.x, ptMousePos.y))
+    {
+        int progress = ptMousePos.x - mediaPlayer.VolumeProgressBar.getRect().left;
+        mediaPlayer.SetVolumeProgress(progress);
+        InvalidateRect(hWnd, NULL, TRUE);
     }
 }
 
@@ -485,8 +498,44 @@ void CreateNotifyIconContextMenu(HWND hWnd)
     HMENU hPopupMenu = CreatePopupMenu();
     InsertMenu(hPopupMenu, 0, MF_BYPOSITION | MF_STRING, IDM_EXIT, L"Exit");
     InsertMenu(hPopupMenu, 0, MF_BYPOSITION | MF_SEPARATOR, 0, L"");
-    InsertMenu(hPopupMenu, 0, MF_BYPOSITION | MF_STRING, bbPause.GetMenuValue(), L"Pause");
-    InsertMenu(hPopupMenu, 0, MF_BYPOSITION | MF_STRING, bbPlay.GetMenuValue(), L"Play");
+    InsertMenu(hPopupMenu, 0, MF_BYPOSITION | MF_STRING, bbPlayPause.GetMenuValue(), L"Play/pause");
+    InsertMenu(hPopupMenu, 0, MF_BYPOSITION | MF_STRING, IDM_OPENSONG, L"Open file");
     SetForegroundWindow(hWnd);
     TrackPopupMenuEx(hPopupMenu, TPM_BOTTOMALIGN | TPM_LEFTALIGN, point.x, point.y, hWnd, NULL);
+}
+
+
+void Stop(HWND hWnd)
+{
+    KillTimer(hWnd, 1);
+    KillTimer(hWnd, 2);
+    mediaPlayer.SetTimeByProgress(0);
+    bbPlayPause.SetBitmap(MAKEINTRESOURCE(IDB_BBPLAY));
+    mediaPlayer.Update();
+    mediaPlayer.player->Stop();
+}
+
+void LoadAndPlay(HWND hWnd, LPCWSTR url)
+{
+    mediaPlayer.LoadSong(url);
+    mediaPlayer.player->Play();
+    std::wstring temp = mediaPlayer.TextBoxSong.getText();
+    temp.append(L"    ");
+    mediaPlayer.TextBoxSong.SetText(temp);
+    mediaPlayer.SetVolumeProgress(mediaPlayer.VolumeProgressBar.getProgress());
+    bbPlayPause.SetBitmap(MAKEINTRESOURCE(IDB_BBPAUSE));
+    SetTimer(hWnd, 1, 1000, NULL);
+    SetTimer(hWnd, 2, 750, (TIMERPROC)RunningLine);
+}
+
+void RunningLine()
+{
+    std::wstring temp = mediaPlayer.TextBoxSong.getText();
+    wchar_t first = temp.data()[0];
+    for (int i = 1; i < temp.size(); i++)
+    {
+        temp[i - 1] = temp.data()[i];
+    }
+    temp[temp.size() - 1] = first;
+    mediaPlayer.TextBoxSong.SetText(temp);
 }

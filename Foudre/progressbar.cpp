@@ -76,6 +76,20 @@ int ProgressBar::getBlueBorder()
 	return this->blueBorder;
 }
 
+void ProgressBar::SetBorderColors(int red, int green, int blue)
+{
+	this->redBorder = red;
+	this->greenBorder = green;
+	this->blueBorder = blue;
+}
+
+void ProgressBar::SetRegionColors(int red, int green, int blue)
+{
+	this->redRegion = red;
+	this->greenRegion = green;
+	this->blueRegion = blue;
+}
+
 int ProgressBar::getRedRegion()
 {
 	return this->redRegion;
@@ -144,6 +158,16 @@ int ProgressBar::getWidth()
 void ProgressBar::SetDelta(int delta)
 {
 	this->delta = delta;
+}
+
+RECT ProgressBar::getRect()
+{
+	RECT temp;
+	temp.left = this->x;
+	temp.right = this->x + this->width;
+	temp.top = this->y;
+	temp.bottom = this->y + this->height;
+	return temp;
 }
 
 void ProgressBar::LoadCoordinates(int x, int y, int width, int height)

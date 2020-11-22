@@ -18,7 +18,7 @@ public:
 	int GetY();
 	int GetMenuValue();
 	void LoadButton(LPCWSTR lpBitmapName);
-
+	void SetBitmap(LPCWSTR bitmapname);
 private:
 	HBITMAP GetBitmapHandle(LPCWSTR lpBitmapName);
 	HWND GetButtonHandle(HWND hWnd, int width, int height);

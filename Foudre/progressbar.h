@@ -23,6 +23,9 @@ public:
 	int getProgress();
 	void SetDelta(int delta);
 	int getIndent();
+	RECT getRect();
+	void SetBorderColors(int red, int green,int blue);
+	void SetRegionColors(int red, int green,int blue);
 private:
 	int x;
 	int y;

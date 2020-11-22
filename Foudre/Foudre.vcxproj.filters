@@ -114,5 +114,38 @@
     <Image Include="..\..\..\Files\Buttons\new\bmp\volumesmall.bmp">
       <Filter>Файлы ресурсов</Filter>
     </Image>
+    <Image Include="..\..\..\..\..\Desktop\Foudre\Files\Icon\Icon.ico">
+      <Filter>Файлы ресурсов</Filter>
+    </Image>
+    <Image Include="..\..\..\..\..\Desktop\Foudre\Files\Buttons\new\bmp\playsmall.bmp">
+      <Filter>Файлы ресурсов</Filter>
+    </Image>
+    <Image Include="..\..\..\..\..\Desktop\Foudre\Files\Buttons\new\bmp\nextsmall.bmp">
+      <Filter>Файлы ресурсов</Filter>
+    </Image>
+    <Image Include="..\..\..\..\..\Desktop\Foudre\Files\Buttons\new\bmp\pausesmall.bmp">
+      <Filter>Файлы ресурсов</Filter>
+    </Image>
+    <Image Include="..\..\..\..\..\Desktop\Foudre\Files\Buttons\new\bmp\stopsmall.bmp">
+      <Filter>Файлы ресурсов</Filter>
+    </Image>
+    <Image Include="..\..\..\..\..\Desktop\Foudre\Files\Buttons\new\bmp\previoussmall.bmp">
+      <Filter>Файлы ресурсов</Filter>
+    </Image>
+    <Image Include="..\..\..\..\..\Desktop\Foudre\Files\Buttons\new\bmp\volumesmall.bmp">
+      <Filter>Файлы ресурсов</Filter>
+    </Image>
+    <Image Include="..\..\..\..\..\Desktop\Foudre\Files\Buttons\new\bmp\rewindforwardsmall.bmp">
+      <Filter>Файлы ресурсов</Filter>
+    </Image>
+    <Image Include="..\..\..\..\..\Desktop\Foudre\Files\Buttons\new\bmp\rewindbacksmall.bmp">
+      <Filter>Файлы ресурсов</Filter>
+    </Image>
+    <Image Include="..\..\..\..\..\Desktop\Foudre\Files\Buttons\new\bmp\volumedisabledsmall.bmp">
+      <Filter>Файлы ресурсов</Filter>
+    </Image>
+    <Image Include="..\..\..\..\..\Desktop\Foudre\Files\Buttons\new\bmp\volumeenabledsmall.bmp">
+      <Filter>Файлы ресурсов</Filter>
+    </Image>
   </ItemGroup>
 </Project>

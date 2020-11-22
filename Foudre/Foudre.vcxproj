@@ -170,6 +170,17 @@
     <ResourceCompile Include="Foudre.rc" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="..\..\..\..\..\Desktop\Foudre\Files\Buttons\new\bmp\nextsmall.bmp" />
+    <Image Include="..\..\..\..\..\Desktop\Foudre\Files\Buttons\new\bmp\pausesmall.bmp" />
+    <Image Include="..\..\..\..\..\Desktop\Foudre\Files\Buttons\new\bmp\playsmall.bmp" />
+    <Image Include="..\..\..\..\..\Desktop\Foudre\Files\Buttons\new\bmp\previoussmall.bmp" />
+    <Image Include="..\..\..\..\..\Desktop\Foudre\Files\Buttons\new\bmp\rewindbacksmall.bmp" />
+    <Image Include="..\..\..\..\..\Desktop\Foudre\Files\Buttons\new\bmp\rewindforwardsmall.bmp" />
+    <Image Include="..\..\..\..\..\Desktop\Foudre\Files\Buttons\new\bmp\stopsmall.bmp" />
+    <Image Include="..\..\..\..\..\Desktop\Foudre\Files\Buttons\new\bmp\volumedisabledsmall.bmp" />
+    <Image Include="..\..\..\..\..\Desktop\Foudre\Files\Buttons\new\bmp\volumeenabledsmall.bmp" />
+    <Image Include="..\..\..\..\..\Desktop\Foudre\Files\Buttons\new\bmp\volumesmall.bmp" />
+    <Image Include="..\..\..\..\..\Desktop\Foudre\Files\Icon\Icon.ico" />
     <Image Include="..\..\..\Files\Buttons\new\bmp\nextsmall.bmp" />
     <Image Include="..\..\..\Files\Buttons\new\bmp\pausesmall.bmp" />
     <Image Include="..\..\..\Files\Buttons\new\bmp\playsmall.bmp" />

@@ -12,6 +12,7 @@ public:
 	TextBox(RECT rect, LPCWSTR text);
 	void SetText(std::wstring text);
 	void SetRect(RECT rect);
+	std::wstring getText();
 	void SetRect(int left, int top, int right, int bottom);
 	void ShowText(HDC hdc, int styles);
 	void SetFontCharacteristics(int height, int width, int weight, int escapement);

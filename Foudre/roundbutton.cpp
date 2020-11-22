@@ -41,9 +41,9 @@ HWND RoundButton::GetButtonHandle(HWND hWnd, int width, int height)
 }
 
 
-HBITMAP RoundButton::GetBitmapHandle(LPCWSTR lpBitmapName)
+HBITMAP RoundButton::GetBitmapHandle(LPCWSTR bitmapname)
 {
-	return LoadBitmap(GetModuleHandle(0), lpBitmapName);
+	return LoadBitmap(GetModuleHandle(0), bitmapname);
 }
 
 int RoundButton::GetHeight()
@@ -71,18 +71,28 @@ int RoundButton::GetY()
 	return this->y;
 }
 
-void RoundButton::Create(HWND hWnd)
+void RoundButton::Create(HWND windowhandle)
 {	
-	this->hButton = GetButtonHandle(hWnd, this->width, this->height);
+	this->hButton = GetButtonHandle(windowhandle, this->width, this->height);
 	HRGN hRgn = CreateEllipticRgn(0, 0, this->width, this->height);
 	SetWindowRgn(this->hButton, hRgn, false);
 	SendMessage(this->hButton, BM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)this->hBitmap);
 }
 
-
-void RoundButton::LoadButton(LPCWSTR lpBitmapName)
+void RoundButton::SetBitmap(LPCWSTR bitmapname)
 {
-	this->hBitmap = GetBitmapHandle(lpBitmapName);
+	this->hBitmap = GetBitmapHandle(bitmapname);
+	BITMAP bmp;
+	GetObject(hBitmap, sizeof(BITMAP), (LPSTR)&bmp);
+	this->height = bmp.bmHeight;
+	this->width = bmp.bmWidth;
+	SendMessage(this->hButton, BM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)this->hBitmap);
+}
+
+
+void RoundButton::LoadButton(LPCWSTR bitmapname)
+{
+	this->hBitmap = GetBitmapHandle(bitmapname);
 	BITMAP bmp;
 	GetObject(hBitmap, sizeof(BITMAP), (LPSTR)&bmp);
 	this->height = bmp.bmHeight;
