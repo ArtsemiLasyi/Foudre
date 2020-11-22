@@ -1,7 +1,7 @@
-#include "SoundtrackProgressbar.h"
+#include "Progressbar.h"
 #include <Windows.h>
 
-SoundtrackProgressBar::SoundtrackProgressBar()
+ProgressBar::ProgressBar()
 {
 	this->x = 0;
 	this->y = 0;
@@ -16,7 +16,7 @@ SoundtrackProgressBar::SoundtrackProgressBar()
 	this->progressX = 0;
 }
 
-SoundtrackProgressBar::SoundtrackProgressBar(int x, int y)
+ProgressBar::ProgressBar(int x, int y)
 {
 	this->x = x;
 	this->y = y;
@@ -31,7 +31,7 @@ SoundtrackProgressBar::SoundtrackProgressBar(int x, int y)
 	this->progressX = 0;
 }
 
-SoundtrackProgressBar::SoundtrackProgressBar(int x, int y, int width, int height)
+ProgressBar::ProgressBar(int x, int y, int width, int height)
 {
 	this->x = x;
 	this->y = y;
@@ -46,12 +46,12 @@ SoundtrackProgressBar::SoundtrackProgressBar(int x, int y, int width, int height
 	this->progressX = 0;
 }
 
-SoundtrackProgressBar::~SoundtrackProgressBar()
+ProgressBar::~ProgressBar()
 {
 
 }
 
-bool SoundtrackProgressBar::CheckPoint(int x, int y)
+bool ProgressBar::CheckPoint(int x, int y)
 {
 	bool rightX = ((x > this->x) && (x < this->x + this->width));
 	bool rightY = ((y > this->y) && (y < this->y + this->height));
@@ -61,37 +61,37 @@ bool SoundtrackProgressBar::CheckPoint(int x, int y)
 		return false;
 }
 
-int SoundtrackProgressBar::getRedBorder()
+int ProgressBar::getRedBorder()
 {
 	return this->redBorder;
 }
 
-int SoundtrackProgressBar::getGreenBorder()
+int ProgressBar::getGreenBorder()
 {
 	return this->greenBorder;
 }
 
-int SoundtrackProgressBar::getBlueBorder()
+int ProgressBar::getBlueBorder()
 {
 	return this->blueBorder;
 }
 
-int SoundtrackProgressBar::getRedRegion()
+int ProgressBar::getRedRegion()
 {
 	return this->redRegion;
 }
 
-int SoundtrackProgressBar::getGreenRegion()
+int ProgressBar::getGreenRegion()
 {
 	return this->greenRegion;
 }
 
-int SoundtrackProgressBar::getBlueRegion()
+int ProgressBar::getBlueRegion()
 {
 	return this->blueRegion;
 }
 
-void SoundtrackProgressBar::Paint(HDC hdc)
+void ProgressBar::Paint(HDC hdc)
 {
 	RECT rect;
 	rect.left = this->x;
@@ -117,7 +117,7 @@ void SoundtrackProgressBar::Paint(HDC hdc)
 	FillRect(hdc, &rect, hBrushRegion);
 }
 
-void SoundtrackProgressBar::Update()
+void ProgressBar::Update()
 {
 	this->progressX += this->delta;
 	if ((this->progressX < this->x) || (this->progressX > this->x + this->width))
@@ -126,27 +126,27 @@ void SoundtrackProgressBar::Update()
 	}
 }
 
-void SoundtrackProgressBar::SetProgress(int x)
+void ProgressBar::SetProgress(int x)
 {
 	this->progressX = x;
 }
 
-int SoundtrackProgressBar::getProgress()
+int ProgressBar::getProgress()
 {
 	return this->progressX;
 }
 
-int SoundtrackProgressBar::getWidth()
+int ProgressBar::getWidth()
 {
 	return this->width;
 }
 
-void SoundtrackProgressBar::SetDelta(int delta)
+void ProgressBar::SetDelta(int delta)
 {
 	this->delta = delta;
 }
 
-void SoundtrackProgressBar::LoadCoordinates(int x, int y, int width, int height)
+void ProgressBar::LoadCoordinates(int x, int y, int width, int height)
 {
 	this->x = x;
 	this->y = y;
@@ -154,7 +154,7 @@ void SoundtrackProgressBar::LoadCoordinates(int x, int y, int width, int height)
 	this->height = height;
 }
 
-int SoundtrackProgressBar::getIndent()
+int ProgressBar::getIndent()
 {
 	return this->indent;
 }

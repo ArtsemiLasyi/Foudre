@@ -20,23 +20,24 @@ MediaPlayer::~MediaPlayer()
 void MediaPlayer::Init(RECT rect)
 {
 
-    this->ProgressBar.LoadCoordinates(0, rect.bottom / 2, rect.right, rect.bottom / 6);
+    this->SoundtrackProgressBar.LoadCoordinates(0, rect.bottom / 2, rect.right, rect.bottom / 6);
+    this->VolumeProgressBar.LoadCoordinates(0,0, 50, 50);
 
     this->TextBoxSong.SetRect(rect.right / 2 - 150,
         rect.bottom / 2 - 50,
         rect.right / 2 + 150,
         rect.bottom / 2 + 50);
-    this->TextBoxSong.SetText(L"NONAME");
+    this->TextBoxSong.SetText(this->defaultSongText);
 
     this->TextBoxTime.SetRect(rect.left + 5, rect.top + 65, 200, 150);
-    this->TextBoxTime.SetText(L"00:00:00/00:00:00");
+    this->TextBoxTime.SetText(this->defaultTimeText);
     this->TextBoxTime.SetFontCharacteristics(20, 10, 10, 0);
     this->player = new Player(&Handle);
 }
 
 void MediaPlayer::Display(HDC hdc)
 {
-    this->ProgressBar.Paint(hdc);
+    this->SoundtrackProgressBar.Paint(hdc);
     SetBkMode(hdc, TRANSPARENT);
     this->TextBoxSong.ShowText(hdc, DT_CENTER);
     this->TextBoxTime.ShowText(hdc, DT_LEFT);
@@ -57,8 +58,8 @@ void MediaPlayer::Update()
     {
         strSongTime += L"/" + this->GetTimeInStr(seconds);
         this->TextBoxTime.SetText(strSongTime.c_str());
-        this->ProgressBar.SetDelta(this->ProgressBar.getWidth() / seconds);
-        this->ProgressBar.Update();
+        this->SoundtrackProgressBar.SetDelta(this->SoundtrackProgressBar.getWidth() / seconds);
+        this->SoundtrackProgressBar.Update();
     }
 }
 
@@ -71,12 +72,12 @@ void MediaPlayer::LoadSong(PCWSTR songname)
     this->Update();  
 }
 
-void MediaPlayer::SetTime(int x)
+void MediaPlayer::SetTimeByProgress(int x)
 {
-    this->ProgressBar.SetProgress(x);
+    this->SoundtrackProgressBar.SetProgress(x);
     MFTIME time;
     this->player->GetDuration(&time);
-    MFTIME currentTime = time * this->ProgressBar.getProgress() / this->ProgressBar.getWidth();
+    MFTIME currentTime = time * this->SoundtrackProgressBar.getProgress() / this->SoundtrackProgressBar.getWidth();
     this->player->SetPosition(currentTime);
     this->secondsPlayed = this->ConvertMFTIMEToSeconds(currentTime);
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "SoundtrackProgressbar.h"
+#include "progressbar.h"
 #include "TextBox.h"
 #include "Player.h"
 #include "Song.h"
@@ -9,7 +9,8 @@
 class MediaPlayer
 {
 public:
-	SoundtrackProgressBar ProgressBar;
+	ProgressBar SoundtrackProgressBar;
+	ProgressBar VolumeProgressBar;
 	TextBox TextBoxSong;
 	TextBox TextBoxTime;
 	Player* player;
@@ -22,10 +23,12 @@ public:
 	void Display(HDC hdc);
 	void Update();
 	int secondsPlayed = 0;
-	void SetTime(int x);
+	void SetTimeByProgress(int x);
 private:
 	Song* song;
 	std::wstring GetTimeInStr(int time);
 	int ConvertMFTIMEToSeconds(MFTIME time);
+	const std::wstring defaultSongText = L"NONAME";
+	const std::wstring defaultTimeText = L"00:00:00/00:00:00";
 };
 
