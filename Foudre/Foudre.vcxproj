@@ -147,13 +147,11 @@
     <ClInclude Include="Player.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="Song.h" />
-    <ClInclude Include="targetver.h" />
     <ClInclude Include="TopoBuilder.h" />
     <ClInclude Include="MediaPlayer.h" />
     <ClInclude Include="ProgramInfo.h" />
-    <ClInclude Include="Resource.h" />
     <ClInclude Include="roundbutton.h" />
-    <ClInclude Include="soundtrackprogressbar.h" />
+    <ClInclude Include="progressbar.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="textbox.h" />
   </ItemGroup>
@@ -162,11 +160,10 @@
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="Song.cpp" />
     <ClCompile Include="TopoBuilder.cpp" />
-    <ClCompile Include="Foudre.cpp" />
     <ClCompile Include="MediaPlayer.cpp" />
     <ClCompile Include="ProgramInfo.cpp" />
     <ClCompile Include="roundbutton.cpp" />
-    <ClCompile Include="soundtrackprogressbar.cpp" />
+    <ClCompile Include="progressbar.cpp" />
     <ClCompile Include="textbox.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -178,6 +175,7 @@
     <Image Include="..\..\..\Files\Buttons\new\bmp\playsmall.bmp" />
     <Image Include="..\..\..\Files\Buttons\new\bmp\previoussmall.bmp" />
     <Image Include="..\..\..\Files\Buttons\new\bmp\stopsmall.bmp" />
+    <Image Include="..\..\..\Files\Buttons\new\bmp\volumesmall.bmp" />
     <Image Include="..\..\..\Files\Icon\Icon.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

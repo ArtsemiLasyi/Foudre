@@ -1,13 +1,13 @@
 #include <Windows.h>
 
 #pragma once
-class SoundtrackProgressBar
+class ProgressBar
 {
 public:
-	SoundtrackProgressBar();
-	SoundtrackProgressBar(int x, int y);
-	SoundtrackProgressBar(int x, int y, int width, int height);
-	~SoundtrackProgressBar();
+	ProgressBar();
+	ProgressBar(int x, int y);
+	ProgressBar(int x, int y, int width, int height);
+	~ProgressBar();
 	bool CheckPoint(int x, int y);
 	void LoadCoordinates(int x, int y, int width, int height);
 	int getRedBorder();
@@ -18,7 +18,9 @@ public:
 	int getBlueRegion();
 	void Paint(HDC hdc);
 	void Update();
+	int getWidth();
 	void SetProgress(int x);
+	int getProgress();
 	void SetDelta(int delta);
 	int getIndent();
 private:

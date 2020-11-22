@@ -4,14 +4,18 @@
 #include "RoundButton.h"
 #include <shellapi.h>
 #include <strsafe.h>
-#include "SoundtrackProgressbar.h"
+#include <string>
+#include <commdlg.h>
+#include "Progressbar.h"
 #include "TextBox.h"
 #include "MediaPlayer.h"
+#include "Song.h"
 
 #pragma comment(linker, "\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
 #define MAX_LOADSTRING 100
 #define IDM_EXIT 10000
+
 
 // Глобальные переменные:
 HINSTANCE hInst;                                // текущий экземпляр
@@ -25,15 +29,16 @@ LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
 // Круглые кнопки
-RoundButton bbPlay(1001);
-RoundButton bbStop(1002);
-RoundButton bbPause(1003);
-RoundButton bbPrevious(1004);
-RoundButton bbNext(1005);
+RoundButton bbPlay(IDM_PLAY);
+RoundButton bbStop(1003);
+RoundButton bbPause(IDM_PAUSE);
+RoundButton bbPrevious(IDM_PREVIOUS);
+RoundButton bbNext(IDM_NEXT);
+RoundButton bbVolume(1008);
 
 // Составные части медиаплеера
 MediaPlayer mediaPlayer;
-
+LPCWSTR cmdArg;
 
 // Структура для отображения уведомлений в области уведомлений
 NOTIFYICONDATA notifyIconData;
@@ -75,6 +80,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(lpCmdLine);
 
     ProgramInfo programinfo;
+    cmdArg = lpCmdLine;
 
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_FOUDRE, szWindowClass, MAX_LOADSTRING);
@@ -250,19 +256,33 @@ void ProcessWM_CREATE(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     bbStop.LoadButton(MAKEINTRESOURCE(IDB_BBSTOP));
     bbNext.LoadButton(MAKEINTRESOURCE(IDB_BBNEXT));
     bbPrevious.LoadButton(MAKEINTRESOURCE(IDB_BBPREVIOUS));
+    bbVolume.LoadButton(MAKEINTRESOURCE(IDB_BBVOLUMEENABLED));
 
     RECT rect;
     GetClientRect(hWnd, &rect);
     int y = rect.bottom - bbPlay.GetHeight();
-
     bbPlay.Create(hWnd, (rect.right * 3 / 10) - bbPlay.GetWidth() / 2, y);
     bbPause.Create(hWnd, (rect.right * 2 / 10) - bbPause.GetWidth() / 2, y);
     bbStop.Create(hWnd, (rect.right * 4 / 10) - bbStop.GetWidth() / 2, y);
     bbNext.Create(hWnd, (rect.right * 5 / 10) - bbNext.GetWidth() / 2, y);
     bbPrevious.Create(hWnd, (rect.right * 1 / 10) - bbPrevious.GetWidth() / 2, y);
-
+    bbVolume.Create(hWnd, (rect.right * 7 / 10) - bbPrevious.GetWidth() / 2, y);
     mediaPlayer.Init(rect);
-
+    
+    if (wcslen(cmdArg) > 0)
+    {
+        std::wstring str = cmdArg;
+        int index1 = str.find_first_of(L"\"");
+        int index2 = str.find_last_of(L"\"");
+        if (index1 != -1)
+            str = str.substr(index1+1);
+        if (index2 != -1)
+            str = str.substr(0,index2-1);
+        mediaPlayer.LoadSong(str.c_str());
+        mediaPlayer.player->Play();
+        SetTimer(hWnd, 1, 1000, NULL);
+        InvalidateRect(hWnd, NULL, TRUE);
+    }
 }
 
 /// <summary>
@@ -276,28 +296,74 @@ void ProcessWM_COMMAND(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     if (LOWORD(wParam) == bbPlay.GetMenuValue())
     {
-        MessageBox(hWnd, L"Play", L"Play", MB_OK);
-        SetTimer(hWnd, 1, 100, NULL);
+        PlayerState state = mediaPlayer.player->GetState();
+        if ((state == PlayerState::Paused) || (state == PlayerState::Stopped))
+        {
+            mediaPlayer.player->Play();
+            SetTimer(hWnd, 1, 1000, NULL);
+        }
     }
     else if (LOWORD(wParam) == bbPause.GetMenuValue())
     {
-        KillTimer(hWnd, 1);
-        MessageBox(hWnd, L"Pause", L"Pause", MB_OK);
+        PlayerState state = mediaPlayer.player->GetState();
+        if (state == PlayerState::Started)
+        {
+            KillTimer(hWnd, 1);
+            mediaPlayer.player->Pause();
+        }
     }
     else if (LOWORD(wParam) == bbStop.GetMenuValue())
     {
         KillTimer(hWnd, 1);
-        MessageBox(hWnd, L"Stop", L"Stop", MB_OK);
-        mediaPlayer.ProgressBar.SetProgress(0);
+        mediaPlayer.SetTimeByProgress(0);
+        mediaPlayer.Update();
+        mediaPlayer.player->Stop();
         InvalidateRect(hWnd, NULL, TRUE);
     }
     else if (LOWORD(wParam) == bbNext.GetMenuValue())
     {
-        MessageBox(hWnd, L"Next", L"Next", MB_OK);
+        mediaPlayer.Update();
+        InvalidateRect(hWnd, NULL, TRUE);
     }
     else if (LOWORD(wParam) == bbPrevious.GetMenuValue())
     {
-        MessageBox(hWnd, L"Previous", L"Previous", MB_OK);
+        mediaPlayer.Update();
+        InvalidateRect(hWnd, NULL, TRUE);
+    }
+    else if (LOWORD(wParam) == IDM_OPENSONG)
+    {
+        OPENFILENAME ofn;
+        wchar_t szFile[260];
+        HANDLE hf;
+        ZeroMemory(&ofn, sizeof(ofn));
+        ofn.lStructSize = sizeof(ofn);
+        ofn.hwndOwner = hWnd;
+        ofn.lpstrFile = szFile;
+        ofn.lpstrFile[0] = '\0';
+        ofn.nMaxFile = sizeof(szFile);
+        ofn.lpstrFilter = L"Mp3 files(*.mp3)\0*.mp3\0Wav files(*.wav)\0*.wav\0All files(*.*)\0*.*\0\0";
+        ofn.nFilterIndex = 1;
+        ofn.lpstrFileTitle = NULL;
+        ofn.nMaxFileTitle = 0;
+        ofn.lpstrInitialDir = NULL;
+        ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_EXPLORER;
+
+        // Display the Open dialog box. 
+        if (GetOpenFileName(&ofn) == TRUE)
+        {
+            PlayerState state = mediaPlayer.player->GetState();
+            if (state == PlayerState::Started || state == PlayerState::Paused)
+            {
+                mediaPlayer.SetTimeByProgress(0);
+                mediaPlayer.Update();
+                mediaPlayer.player->Stop();
+                KillTimer(hWnd, 1);
+            }
+            mediaPlayer.LoadSong(ofn.lpstrFile);
+            mediaPlayer.player->Play();
+            SetTimer(hWnd, 1, 1000, NULL);
+            InvalidateRect(hWnd, NULL, TRUE);
+        }
     }
     else if (LOWORD(wParam) == IDM_EXIT)
     {
@@ -363,10 +429,15 @@ void ProcessWM_NOTIFYCALLBACK(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 void ProcessWM_LBUTTONDOWN(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     POINT ptMousePos = { LOWORD(lParam), HIWORD(lParam) };
-    if (mediaPlayer.ProgressBar.CheckPoint(ptMousePos.x, ptMousePos.y))
+    if (mediaPlayer.SoundtrackProgressBar.CheckPoint(ptMousePos.x, ptMousePos.y))
     {
-        mediaPlayer.ProgressBar.SetProgress(ptMousePos.x);
-        InvalidateRect(hWnd, NULL, TRUE);
+        PlayerState state = mediaPlayer.player->GetState();
+        if (state == PlayerState::Started)
+        {
+            mediaPlayer.SetTimeByProgress(ptMousePos.x);
+            mediaPlayer.Update();
+            InvalidateRect(hWnd, NULL, TRUE);
+        }
     }
 }
 
@@ -378,9 +449,14 @@ void ProcessWM_LBUTTONDOWN(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
 /// <param name="wParam"></param>
 /// <param name="lParam"></param>
 void ProcessWM_TIMER(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
-{  
-    mediaPlayer.Update();
-    InvalidateRect(hWnd, NULL, TRUE);
+{
+    PlayerState state = mediaPlayer.player->GetState();
+    if (state == PlayerState::Started)
+    {
+        mediaPlayer.secondsPlayed++;
+        mediaPlayer.Update();
+        InvalidateRect(hWnd, NULL, TRUE);
+    }
 }
 
 /// <summary>

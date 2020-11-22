@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Windows.h>
+#include <string>
 
 class TextBox
 {
@@ -9,13 +10,13 @@ public:
 	~TextBox();
 	TextBox(RECT rect);
 	TextBox(RECT rect, LPCWSTR text);
-	void SetText(LPCWSTR text);
+	void SetText(std::wstring text);
 	void SetRect(RECT rect);
 	void SetRect(int left, int top, int right, int bottom);
 	void ShowText(HDC hdc, int styles);
 	void SetFontCharacteristics(int height, int width, int weight, int escapement);
 private:
-	LPCWSTR text;
+	std::wstring text;
 	RECT rect;
 	LOGFONT logFont;
 	void InitFont();
