@@ -34,6 +34,7 @@ RoundButton bbPlayPause(IDM_PLAYPAUSE);
 RoundButton bbRewindBack(IDM_REWINDBACK);
 RoundButton bbRewindForward(IDM_REWINDFORWARD);
 RoundButton bbVolume(1008);
+RoundButton bbOpenFile(IDM_OPENSONG);
 
 // Составные части медиаплеера
 MediaPlayer mediaPlayer;
@@ -261,6 +262,7 @@ void ProcessWM_CREATE(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     bbRewindForward.LoadButton(MAKEINTRESOURCE(IDB_BBREWINDFORWARD));
     bbRewindBack.LoadButton(MAKEINTRESOURCE(IDB_BBREWINDBACK));
     bbVolume.LoadButton(MAKEINTRESOURCE(IDB_BBVOLUMEENABLED));
+    bbOpenFile.LoadButton(MAKEINTRESOURCE(IDB_BBREWINDBACK));
 
     RECT rect;
     GetClientRect(hWnd, &rect);
@@ -270,6 +272,7 @@ void ProcessWM_CREATE(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     bbRewindForward.Create(hWnd, (rect.right * 4 / 10) - bbRewindForward.GetWidth() / 2, y);
     bbRewindBack.Create(hWnd, (rect.right * 1 / 10) - bbRewindBack.GetWidth() / 2, y);
     bbVolume.Create(hWnd, (rect.right * 7 / 10) - bbRewindBack.GetWidth() / 2, y);
+    bbOpenFile.Create(hWnd, (rect.right * 1 / 10) - bbRewindBack.GetWidth() / 2, 0);
     mediaPlayer.Init(rect);
     
     if (wcslen(cmdArg) > 0)
